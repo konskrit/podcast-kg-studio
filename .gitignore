@@ -53,6 +53,10 @@ next-env.d.ts
 .cursor/
 .vscode/
 .idea/
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
 *.swp
 *.swo
 *~
@@ -68,6 +72,9 @@ docker-data/
 /uploads/
 /audio/
 
+# prisma generated client
+/src/generated/
+
 # markdown — keep docs local; do not push
 *.md
 *.mdx
@@ -76,3 +83,5 @@ docker-data/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+/src/generated/prisma

@@ -1,0 +1,123 @@
+// Podcast KG Studio — product tables (graph lives in Oxigraph, not here)
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SourceStatus {
+  uploaded
+  extracting
+  graph_ready
+  failed
+}
+
+enum EpisodeType {
+  single
+  synthesis
+}
+
+enum EpisodeStatus {
+  queued
+  running
+  succeeded
+  failed
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  settings UserSettings?
+  sources  Source[]
+  episodes Episode[]
+  jobs     Job[]
+}
+
+model UserSettings {
+  userId              String  @id
+  llmBaseUrl          String?
+  llmModel            String?
+  /// AES-GCM ciphertext (base64); never log or export
+  encryptedCloudApiKey String?
+  ttsProvider         String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Source {
+  id           String       @id @default(cuid())
+  userId       String
+  title        String
+  mimeType     String?
+  /// Relative path under local data volume
+  filePath     String?
+  extractedText String?
+  status       SourceStatus @default(uploaded)
+  error        String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Episode {
+  id               String        @id @default(cuid())
+  userId           String
+  type             EpisodeType
+  title            String
+  status           EpisodeStatus @default(queued)
+  /// JSON array of source ids
+  sourceIds        Json
+  hasCommentary    Boolean       @default(false)
+  audioPath        String?
+  outlineJson      Json?
+  scriptNarration  String?
+  scriptCommentary String?
+  error            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Job {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  payload   Json?
+  status    JobStatus @default(queued)
+  stage     String?
+  progress  Int?
+  error     String?
+  /// Optional BullMQ job id once slice 2 lands
+  queueId   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
