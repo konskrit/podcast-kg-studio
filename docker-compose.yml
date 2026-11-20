@@ -1,21 +1,30 @@
 # Optional web/ops path. Native Windows can run Postgres + Oxigraph as local services instead.
+# Postgres 18: mount /var/lib/postgresql (not .../data). Prefer named volumes on Windows.
+name: podcast-kg-studio
+
 services:
   postgres:
     image: postgres:18-alpine
     restart: unless-stopped
+    # Only DB vars — never env_file: [.env] (would leak AUTH_SECRET etc. into the container).
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-pkg}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pkg}
       POSTGRES_DB: ${POSTGRES_DB:-podcast_kg_studio}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pkg} -d ${POSTGRES_DB:-podcast_kg_studio}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-pkg} -d ${POSTGRES_DB:-podcast_kg_studio}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 12
+      start_period: 10s
 
   oxigraph:
     image: ghcr.io/oxigraph/oxigraph:latest
@@ -24,4 +33,8 @@ services:
     ports:
       - "127.0.0.1:${OXIGRAPH_PORT:-7878}:7878"
     volumes:
-      - ./data/oxigraph:/data
+      - oxigraph_data:/data
+
+volumes:
+  postgres_data:
+  oxigraph_data:
