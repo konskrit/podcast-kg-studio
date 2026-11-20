@@ -1,5 +1,11 @@
 import type { NextAuthConfig } from "next-auth";
 
+import {
+  getLocaleFromPathname,
+  pathnameWithoutLocale,
+  withLocale,
+} from "@/i18n/path";
+
 const trustHost =
   process.env.AUTH_TRUST_HOST === "true" ||
   process.env.NODE_ENV !== "production";
@@ -12,11 +18,11 @@ export const authConfig = {
   trustHost,
   session: { strategy: "jwt" },
   pages: {
+    // Locale prefix is added by next-intl / authorized redirects.
     signIn: "/login",
   },
   providers: [],
   callbacks: {
-    // Proxy reads session.user.id — must mirror JWT `sub` here (no Prisma).
     session({ session, token }) {
       if (!token.sub) {
         return { ...session, user: undefined };
@@ -28,17 +34,21 @@ export const authConfig = {
     },
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
+      const locale = getLocaleFromPathname(pathname);
+      const path = pathnameWithoutLocale(pathname);
       const isLoggedIn = Boolean(auth?.user?.id);
-      const isAuthPage = pathname === "/login" || pathname === "/register";
+      const isAuthPage = path === "/login" || path === "/register";
 
-      if (isAuthPage) {
-        if (isLoggedIn) {
-          return Response.redirect(new URL("/", request.nextUrl));
-        }
+      if (pathname.startsWith("/api/auth")) {
         return true;
       }
 
-      if (pathname.startsWith("/api/auth")) {
+      if (isAuthPage) {
+        if (isLoggedIn) {
+          return Response.redirect(
+            new URL(withLocale(locale, "/"), request.nextUrl),
+          );
+        }
         return true;
       }
 
@@ -46,7 +56,7 @@ export const authConfig = {
         return true;
       }
 
-      const login = new URL("/login", request.nextUrl);
+      const login = new URL(withLocale(locale, "/login"), request.nextUrl);
       login.searchParams.set("callbackUrl", pathname);
       return Response.redirect(login);
     },

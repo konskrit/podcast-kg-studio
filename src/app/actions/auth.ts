@@ -3,21 +3,30 @@
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 
 import { signIn } from "@/auth";
 import {
   credentialsSchema,
-  firstZodMessage,
   formString,
   registerSchema,
 } from "@/lib/auth-schema";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { Prisma } from "@/generated/prisma/client";
+import { redirect } from "@/i18n/navigation";
+import type { AppLocale } from "@/i18n/routing";
+
+export type AuthErrorKey =
+  | "invalidCredentials"
+  | "unavailable"
+  | "tooManyAttempts"
+  | "accountExists"
+  | "createdButSignInFailed"
+  | "invalidInput";
 
 export type AuthFormState = {
-  error?: string;
+  errorKey?: AuthErrorKey;
 };
 
 function clientKey(prefix: string, email: string, ip: string): string {
@@ -33,7 +42,11 @@ async function requestIp(): Promise<string> {
   );
 }
 
-async function signInAndGoHome(email: string, password: string): Promise<AuthFormState> {
+async function signInAndGoHome(
+  email: string,
+  password: string,
+  locale: AppLocale,
+): Promise<AuthFormState> {
   try {
     const result = await signIn("credentials", {
       email,
@@ -41,34 +54,34 @@ async function signInAndGoHome(email: string, password: string): Promise<AuthFor
       redirect: false,
     });
 
-    if (result) {
-      if (typeof result === "string") {
-        // unexpected URL-only return
-      } else if (
-        typeof result === "object" &&
-        "error" in result &&
-        result.error
-      ) {
-        return { error: "Invalid email or password." };
-      }
+    if (
+      result &&
+      typeof result === "object" &&
+      "error" in result &&
+      result.error
+    ) {
+      return { errorKey: "invalidCredentials" };
     }
   } catch (error) {
     if (error instanceof AuthError) {
       if (error.type === "CredentialsSignin") {
-        return { error: "Invalid email or password." };
+        return { errorKey: "invalidCredentials" };
       }
-      return { error: "Sign-in temporarily unavailable. Try again." };
+      return { errorKey: "unavailable" };
     }
     throw error;
   }
 
-  redirect("/");
+  redirect({ href: "/", locale });
+  return {};
 }
 
 export async function registerAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const locale = (await getLocale()) as AppLocale;
+
   const parsed = registerSchema.safeParse({
     email: formString(formData.get("email")),
     password: formString(formData.get("password")),
@@ -76,14 +89,14 @@ export async function registerAction(
   });
 
   if (!parsed.success) {
-    return { error: firstZodMessage(parsed.error) };
+    return { errorKey: "invalidInput" };
   }
 
   const email = parsed.data.email;
   const ip = await requestIp();
 
   if (!rateLimit(clientKey("register", email, ip), 5, 60_000)) {
-    return { error: "Too many attempts. Try again in a minute." };
+    return { errorKey: "tooManyAttempts" };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
@@ -101,16 +114,18 @@ export async function registerAction(
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return { error: "An account with that email already exists." };
+      return { errorKey: "accountExists" };
     }
     throw error;
   }
 
-  const signInResult = await signInAndGoHome(email, parsed.data.password);
-  if (signInResult.error) {
-    return {
-      error: "Account created, but sign-in failed. Try logging in.",
-    };
+  const signInResult = await signInAndGoHome(
+    email,
+    parsed.data.password,
+    locale,
+  );
+  if (signInResult.errorKey) {
+    return { errorKey: "createdButSignInFailed" };
   }
   return signInResult;
 }
@@ -119,21 +134,23 @@ export async function loginAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const locale = (await getLocale()) as AppLocale;
+
   const parsed = credentialsSchema.safeParse({
     email: formString(formData.get("email")),
     password: formString(formData.get("password")),
   });
 
   if (!parsed.success) {
-    return { error: firstZodMessage(parsed.error) };
+    return { errorKey: "invalidInput" };
   }
 
   const email = parsed.data.email;
   const ip = await requestIp();
 
   if (!rateLimit(clientKey("login", email, ip), 10, 60_000)) {
-    return { error: "Too many attempts. Try again in a minute." };
+    return { errorKey: "tooManyAttempts" };
   }
 
-  return signInAndGoHome(email, parsed.data.password);
+  return signInAndGoHome(email, parsed.data.password, locale);
 }

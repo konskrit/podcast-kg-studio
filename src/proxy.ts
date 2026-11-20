@@ -1,11 +1,24 @@
 import NextAuth from "next-auth";
+import createMiddleware from "next-intl/middleware";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 import { authConfig } from "@/auth.config";
+import { routing } from "@/i18n/routing";
 
 const { auth } = NextAuth(authConfig);
+const intlMiddleware = createMiddleware(routing);
 
-/** Next.js 16+ file convention — never add middleware.ts. */
-export const proxy = auth;
+/** Next.js 16+ proxy: locale routing + auth gate (never middleware.ts). */
+export const proxy = auth((req) => {
+  const pathname = req.nextUrl.pathname;
+
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
+  return intlMiddleware(req as NextRequest);
+});
 
 export const config = {
   matcher: [

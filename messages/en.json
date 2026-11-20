@@ -1,0 +1,37 @@
+{
+  "Brand": {
+    "name": "Podcast KG Studio"
+  },
+  "Library": {
+    "title": "Library",
+    "signedInAs": "Signed in as {email}. Sources land here in the next slices.",
+    "signOut": "Sign out"
+  },
+  "Auth": {
+    "signInTitle": "Sign in",
+    "createAccountTitle": "Create account",
+    "email": "Email",
+    "password": "Password",
+    "nameOptional": "Name (optional)",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "createAccount": "Create account",
+    "creating": "Creating…",
+    "noAccount": "No account?",
+    "createOne": "Create one",
+    "alreadyRegistered": "Already registered?",
+    "errors": {
+      "invalidCredentials": "Invalid email or password.",
+      "unavailable": "Sign-in temporarily unavailable. Try again.",
+      "tooManyAttempts": "Too many attempts. Try again in a minute.",
+      "accountExists": "An account with that email already exists.",
+      "createdButSignInFailed": "Account created, but sign-in failed. Try logging in.",
+      "invalidInput": "Invalid input."
+    }
+  },
+  "Locale": {
+    "label": "Language",
+    "en": "English",
+    "de": "Deutsch"
+  }
+}
