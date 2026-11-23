@@ -1,12 +1,13 @@
-import { NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
+import { NextIntlClientProvider, hasLocale } from "next-intl";
+import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { locale as localeParam } from "next/root-params";
 
+import "../globals.css";
 import { LocaleSwitcher } from "@/components/locale-switcher";
-import { isAppLocale } from "@/i18n/path";
 import { routing } from "@/i18n/routing";
 
 const geistSans = Geist({
@@ -28,22 +29,18 @@ export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
 
-/** Locale comes from URL params and sets <html lang> + messages — allow blocking. */
 export const instant = false;
 
 export default async function LocaleLayout({
   children,
-  params,
 }: {
   children: ReactNode;
-  params: Promise<{ locale: string }>;
 }) {
-  const { locale } = await params;
-  if (!isAppLocale(locale)) {
+  const locale = await localeParam();
+  if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
-  setRequestLocale(locale);
   const messages = await getMessages();
 
   return (

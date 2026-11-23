@@ -1,9 +1,9 @@
 "use client";
 
-import { useLocale, useTranslations } from "next-intl";
+import { hasLocale, useLocale, useTranslations } from "next-intl";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { routing, type AppLocale } from "@/i18n/routing";
+import { routing } from "@/i18n/routing";
 
 export function LocaleSwitcher() {
   const t = useTranslations("Locale");
@@ -18,7 +18,10 @@ export function LocaleSwitcher() {
         className="rounded border border-zinc-300 bg-white px-2 py-1 text-zinc-900"
         value={locale}
         onChange={(event) => {
-          const next = event.target.value as AppLocale;
+          const next = event.target.value;
+          if (!hasLocale(routing.locales, next)) {
+            return;
+          }
           router.replace(pathname, { locale: next });
         }}
         aria-label={t("label")}

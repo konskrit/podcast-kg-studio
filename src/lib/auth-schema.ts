@@ -5,7 +5,6 @@ const emailSchema = z.preprocess(
   z.email(),
 );
 
-/** Shared credentials shape (Zod 4: use z.email(), not z.string().email()). */
 export const credentialsSchema = z.object({
   email: emailSchema,
   // bcrypt only uses 72 bytes; reject longer inputs explicitly.

@@ -14,8 +14,9 @@ import {
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { Prisma } from "@/generated/prisma/client";
+import type { Locale } from "next-intl";
+
 import { redirect } from "@/i18n/navigation";
-import type { AppLocale } from "@/i18n/routing";
 
 export type AuthErrorKey =
   | "invalidCredentials"
@@ -45,7 +46,7 @@ async function requestIp(): Promise<string> {
 async function signInAndGoHome(
   email: string,
   password: string,
-  locale: AppLocale,
+  locale: Locale,
 ): Promise<AuthFormState> {
   try {
     const result = await signIn("credentials", {
@@ -80,7 +81,7 @@ export async function registerAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const locale = (await getLocale()) as AppLocale;
+  const locale = await getLocale();
 
   const parsed = registerSchema.safeParse({
     email: formString(formData.get("email")),
@@ -134,7 +135,7 @@ export async function loginAction(
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const locale = (await getLocale()) as AppLocale;
+  const locale = await getLocale();
 
   const parsed = credentialsSchema.safeParse({
     email: formString(formData.get("email")),

@@ -66,7 +66,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     session({ session, token }) {
-      // Same contract as auth.config session (proxy + server).
       if (!token.sub) {
         return { ...session, user: undefined };
       }

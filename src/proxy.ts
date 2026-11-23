@@ -9,7 +9,6 @@ import { routing } from "@/i18n/routing";
 const { auth } = NextAuth(authConfig);
 const intlMiddleware = createMiddleware(routing);
 
-/** Next.js 16+ proxy: locale routing + auth gate (never middleware.ts). */
 export const proxy = auth((req) => {
   const pathname = req.nextUrl.pathname;
 

@@ -10,15 +10,10 @@ const trustHost =
   process.env.AUTH_TRUST_HOST === "true" ||
   process.env.NODE_ENV !== "production";
 
-/**
- * Proxy-safe Auth.js config (no Prisma / Node-only imports).
- * Full Credentials + DB checks live in auth.ts.
- */
 export const authConfig = {
   trustHost,
   session: { strategy: "jwt" },
   pages: {
-    // Locale prefix is added by next-intl / authorized redirects.
     signIn: "/login",
   },
   providers: [],

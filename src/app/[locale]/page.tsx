@@ -1,24 +1,12 @@
-import { getTranslations, setRequestLocale } from "next-intl/server";
-
-import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { auth, signOut } from "@/auth";
 import { redirect } from "@/i18n/navigation";
-import { isAppLocale } from "@/i18n/path";
 
-/** Session gate uses cookies — allow blocking render under Cache Components. */
 export const instant = false;
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await params;
-  if (!isAppLocale(locale)) {
-    notFound();
-  }
-  setRequestLocale(locale);
+export default async function HomePage() {
+  const locale = await getLocale();
 
   const session = await auth();
   const user = session?.user;
