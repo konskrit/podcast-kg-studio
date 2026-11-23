@@ -1,18 +1,20 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useActionState } from "react";
 
-import { registerAction, type AuthFormState } from "@/app/actions/auth";
+import { registerAction } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
+import type { AuthFormState } from "@/libs/interfaces/auth";
 
 const initialState: AuthFormState = {};
 
 export default function RegisterPage() {
   const t = useTranslations("Auth");
   const tBrand = useTranslations("Brand");
+  const locale = useLocale();
   const [state, formAction, pending] = useActionState(
-    registerAction,
+    registerAction.bind(null, locale),
     initialState,
   );
 

@@ -2,10 +2,6 @@ type Bucket = { count: number; resetAt: number };
 
 const buckets = new Map<string, Bucket>();
 
-/**
- * Fixed-window limiter for a single Node process (local production / one app instance).
- * Returns true when the request is allowed.
- */
 export function rateLimit(
   key: string,
   limit: number,

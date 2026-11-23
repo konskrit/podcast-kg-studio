@@ -32,5 +32,4 @@ function createPrismaClient() {
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-// Always reuse in this process (local next start and serverless warm instances).
 globalForPrisma.prisma = prisma;

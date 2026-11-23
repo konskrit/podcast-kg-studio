@@ -2,36 +2,27 @@
 
 import bcrypt from "bcryptjs";
 import { AuthError } from "next-auth";
+import { hasLocale, type Locale } from "next-intl";
 import { headers } from "next/headers";
-import { getLocale } from "next-intl/server";
 
 import { signIn } from "@/auth";
-import {
-  credentialsSchema,
-  formString,
-  registerSchema,
-} from "@/lib/auth-schema";
-import { prisma } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
 import { Prisma } from "@/generated/prisma/client";
-import type { Locale } from "next-intl";
-
 import { redirect } from "@/i18n/navigation";
-
-export type AuthErrorKey =
-  | "invalidCredentials"
-  | "unavailable"
-  | "tooManyAttempts"
-  | "accountExists"
-  | "createdButSignInFailed"
-  | "invalidInput";
-
-export type AuthFormState = {
-  errorKey?: AuthErrorKey;
-};
+import { routing } from "@/i18n/routing";
+import { getBcryptRounds } from "@/libs/config/auth";
+import { AUTH_RATE_LIMIT } from "@/libs/constants/auth";
+import { prisma } from "@/libs/db";
+import type { AuthFormState } from "@/libs/interfaces/auth";
+import { credentialsSchema, registerSchema } from "@/libs/schemas/auth";
+import { formString } from "@/libs/utils/form";
+import { rateLimit } from "@/libs/utils/rate-limit";
 
 function clientKey(prefix: string, email: string, ip: string): string {
   return `${prefix}:${ip}:${email}`;
+}
+
+function resolveLocale(locale: string): Locale {
+  return hasLocale(routing.locales, locale) ? locale : routing.defaultLocale;
 }
 
 async function requestIp(): Promise<string> {
@@ -78,10 +69,11 @@ async function signInAndGoHome(
 }
 
 export async function registerAction(
+  locale: string,
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const locale = await getLocale();
+  const resolvedLocale = resolveLocale(locale);
 
   const parsed = registerSchema.safeParse({
     email: formString(formData.get("email")),
@@ -95,12 +87,16 @@ export async function registerAction(
 
   const email = parsed.data.email;
   const ip = await requestIp();
+  const { limit, windowMs } = AUTH_RATE_LIMIT.register;
 
-  if (!rateLimit(clientKey("register", email, ip), 5, 60_000)) {
+  if (!rateLimit(clientKey("register", email, ip), limit, windowMs)) {
     return { errorKey: "tooManyAttempts" };
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  const passwordHash = await bcrypt.hash(
+    parsed.data.password,
+    getBcryptRounds(),
+  );
 
   try {
     await prisma.user.create({
@@ -123,7 +119,7 @@ export async function registerAction(
   const signInResult = await signInAndGoHome(
     email,
     parsed.data.password,
-    locale,
+    resolvedLocale,
   );
   if (signInResult.errorKey) {
     return { errorKey: "createdButSignInFailed" };
@@ -132,10 +128,11 @@ export async function registerAction(
 }
 
 export async function loginAction(
+  locale: string,
   _prev: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
-  const locale = await getLocale();
+  const resolvedLocale = resolveLocale(locale);
 
   const parsed = credentialsSchema.safeParse({
     email: formString(formData.get("email")),
@@ -148,10 +145,11 @@ export async function loginAction(
 
   const email = parsed.data.email;
   const ip = await requestIp();
+  const { limit, windowMs } = AUTH_RATE_LIMIT.login;
 
-  if (!rateLimit(clientKey("login", email, ip), 10, 60_000)) {
+  if (!rateLimit(clientKey("login", email, ip), limit, windowMs)) {
     return { errorKey: "tooManyAttempts" };
   }
 
-  return signInAndGoHome(email, parsed.data.password, locale);
+  return signInAndGoHome(email, parsed.data.password, resolvedLocale);
 }

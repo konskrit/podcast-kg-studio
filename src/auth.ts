@@ -3,12 +3,9 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 import { authConfig } from "@/auth.config";
-import { credentialsSchema } from "@/lib/auth-schema";
-import { prisma } from "@/lib/db";
-
-/** Precomputed bcrypt hash so missing-user paths still pay compare cost. */
-const TIMING_DUMMY_HASH =
-  "$2b$12$7GX9i8yO5.U3PjtlNR6aEuNKnamtGhMu94KIkGZGGRR/FIfuJM5OW";
+import { getAuthTimingDummyHash } from "@/libs/config/auth";
+import { prisma } from "@/libs/db";
+import { credentialsSchema } from "@/libs/schemas/auth";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -25,7 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const email = parsed.data.email;
           const user = await prisma.user.findUnique({ where: { email } });
-          const hash = user?.passwordHash ?? TIMING_DUMMY_HASH;
+          const hash = user?.passwordHash ?? getAuthTimingDummyHash();
           const valid = await bcrypt.compare(parsed.data.password, hash);
 
           if (!user || !valid) return null;

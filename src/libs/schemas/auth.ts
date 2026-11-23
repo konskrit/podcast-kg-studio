@@ -19,11 +19,3 @@ export const registerSchema = credentialsSchema.extend({
     .optional()
     .transform((value) => (value && value.length > 0 ? value : undefined)),
 });
-
-export function formString(value: FormDataEntryValue | null): string {
-  return typeof value === "string" ? value : "";
-}
-
-export function firstZodMessage(error: z.ZodError): string {
-  return error.issues[0]?.message ?? "Invalid input.";
-}

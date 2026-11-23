@@ -21,5 +21,3 @@ export const jobProgressEventSchema = z.object({
   status: jobStatusSchema,
   progress: z.number().int().min(0).max(100).optional(),
 });
-
-export type JobProgressEvent = z.infer<typeof jobProgressEventSchema>;

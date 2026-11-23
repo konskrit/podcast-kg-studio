@@ -1,17 +1,22 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useActionState } from "react";
 
-import { loginAction, type AuthFormState } from "@/app/actions/auth";
+import { loginAction } from "@/app/actions/auth";
 import { Link } from "@/i18n/navigation";
+import type { AuthFormState } from "@/libs/interfaces/auth";
 
 const initialState: AuthFormState = {};
 
 export default function LoginPage() {
   const t = useTranslations("Auth");
   const tBrand = useTranslations("Brand");
-  const [state, formAction, pending] = useActionState(loginAction, initialState);
+  const locale = useLocale();
+  const [state, formAction, pending] = useActionState(
+    loginAction.bind(null, locale),
+    initialState,
+  );
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center gap-6 px-6 py-16">
