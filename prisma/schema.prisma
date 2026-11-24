@@ -50,12 +50,15 @@ model User {
 }
 
 model UserSettings {
-  userId              String  @id
+  userId              String   @id
+  llmProvider         String?
   llmBaseUrl          String?
   llmModel            String?
-  /// AES-GCM ciphertext (base64); never log or export
-  encryptedCloudApiKey String?
+  encryptedLlmApiKey  String?
   ttsProvider         String?
+  ttsModel            String?
+  ttsVoice            String?
+  encryptedTtsApiKey  String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
