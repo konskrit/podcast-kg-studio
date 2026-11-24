@@ -1,4 +1,4 @@
 export const AUTH_RATE_LIMIT = {
-  register: { limit: 5, windowMs: 60_000 },
-  login: { limit: 10, windowMs: 60_000 },
+  register: { points: 5, durationSec: 60 },
+  login: { points: 10, durationSec: 60 },
 } as const;

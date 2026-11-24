@@ -87,9 +87,9 @@ export async function registerAction(
 
   const email = parsed.data.email;
   const ip = await requestIp();
-  const { limit, windowMs } = AUTH_RATE_LIMIT.register;
+  const { points, durationSec } = AUTH_RATE_LIMIT.register;
 
-  if (!rateLimit(clientKey("register", email, ip), limit, windowMs)) {
+  if (!(await rateLimit(clientKey("register", email, ip), points, durationSec))) {
     return { errorKey: "tooManyAttempts" };
   }
 
@@ -145,9 +145,9 @@ export async function loginAction(
 
   const email = parsed.data.email;
   const ip = await requestIp();
-  const { limit, windowMs } = AUTH_RATE_LIMIT.login;
+  const { points, durationSec } = AUTH_RATE_LIMIT.login;
 
-  if (!rateLimit(clientKey("login", email, ip), limit, windowMs)) {
+  if (!(await rateLimit(clientKey("login", email, ip), points, durationSec))) {
     return { errorKey: "tooManyAttempts" };
   }
 

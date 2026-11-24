@@ -1,24 +1,31 @@
-type Bucket = { count: number; resetAt: number };
+import { RateLimiterMemory } from "rate-limiter-flexible";
 
-const buckets = new Map<string, Bucket>();
+const limiters = new Map<string, RateLimiterMemory>();
 
-export function rateLimit(
-  key: string,
-  limit: number,
-  windowMs: number,
-): boolean {
-  const now = Date.now();
-  const current = buckets.get(key);
-
-  if (!current || current.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return true;
+function getLimiter(points: number, durationSec: number): RateLimiterMemory {
+  const id = `${points}:${durationSec}`;
+  const existing = limiters.get(id);
+  if (existing) {
+    return existing;
   }
 
-  if (current.count >= limit) {
+  const limiter = new RateLimiterMemory({
+    points,
+    duration: durationSec,
+  });
+  limiters.set(id, limiter);
+  return limiter;
+}
+
+export async function rateLimit(
+  key: string,
+  points: number,
+  durationSec: number,
+): Promise<boolean> {
+  try {
+    await getLimiter(points, durationSec).consume(key);
+    return true;
+  } catch {
     return false;
   }
-
-  current.count += 1;
-  return true;
 }
