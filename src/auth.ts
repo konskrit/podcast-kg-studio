@@ -3,9 +3,14 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
 import { authConfig } from "@/auth.config";
-import { getAuthTimingDummyHash } from "@/libs/config/auth";
+import { authEnv } from "@/libs/config/env";
 import { prisma } from "@/libs/db";
 import { credentialsSchema } from "@/libs/schemas/auth";
+
+const missingUserHash = bcrypt.hashSync(
+  "timing-dummy",
+  authEnv().AUTH_BCRYPT_ROUNDS,
+);
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -22,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const email = parsed.data.email;
           const user = await prisma.user.findUnique({ where: { email } });
-          const hash = user?.passwordHash ?? getAuthTimingDummyHash();
+          const hash = user?.passwordHash ?? missingUserHash;
           const valid = await bcrypt.compare(parsed.data.password, hash);
 
           if (!user || !valid) return null;

@@ -9,7 +9,7 @@ import { signIn } from "@/auth";
 import { Prisma } from "@/generated/prisma/client";
 import { redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
-import { getBcryptRounds } from "@/libs/config/auth";
+import { authEnv } from "@/libs/config/env";
 import { AUTH_RATE_LIMIT } from "@/libs/constants/auth";
 import { prisma } from "@/libs/db";
 import type { AuthFormState } from "@/libs/interfaces/auth";
@@ -95,7 +95,7 @@ export async function registerAction(
 
   const passwordHash = await bcrypt.hash(
     parsed.data.password,
-    getBcryptRounds(),
+    authEnv().AUTH_BCRYPT_ROUNDS,
   );
 
   try {
